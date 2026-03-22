@@ -32,7 +32,7 @@
 Labels
 
  | Label | Значение | Пример | Метрики | 
- |-------|----------|----------|----------|----------|
+ |-------|----------|----------|----------|
  | method | HTTP-метод запроса | GET, POST, PATCH, DELETE | http_requests_total, http_request_duration_seconds |
  | route | Нормализованный путь |/v1/tasks, /v1/tasks/{id}, /metrics | http_requests_total, http_request_duration_seconds |
  | status | HTTP-статус отве | 200, 201, 401, 404, 503 | http_requests_total |
