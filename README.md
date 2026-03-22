@@ -8,18 +8,6 @@
 
 - Научиться собирать и визуализировать метрики сервиса: трафик, ошибки, задержки, активные запросы.
 
-## Теория
-
-
-
-### Основная идея и минимальный набор метрик
-
-Файл .proto выступает в роли контракта между клиентом и сервером. Он описывает:
-
-1. Сервисы (Services) - какие RPC-методы доступны.
-2. Сообщения (Messages) - структуры запросов и ответов.
-Любое изменение в API должно начинаться с изменения этого файла.
-
 ### Содержание проекта
 
 **Auth service** (порт 8081 +  gRPC порт 50051)
@@ -135,7 +123,7 @@ curl -i -X POST http://localhost:8081/v1/auth/login \
   -d '{"title":"","description":"","due_date":"2026-03-21"}'
 ```
 
-
+<img width="900" height="529" alt="image" src="https://github.com/user-attachments/assets/a5ff7142-ab04-4cb2-b9de-01707ad274e5" />
 
 3. Получить несколько раз список задач
 
@@ -144,12 +132,11 @@ curl -i -X POST http://localhost:8081/v1/auth/login \
   -H "Authorization: Bearer demo-token-test_kottia:kate"
 ```
 
-
+<img width="900" height="739" alt="image" src="https://github.com/user-attachments/assets/46f30c34-1e3b-45f5-bc4a-101faa29bbd0" />
 
 4. Несколько раз запрашиваем с ошибкой
 
-
-
+<img width="900" height="515" alt="image" src="https://github.com/user-attachments/assets/086bc46e-60d5-4e95-bda3-0e041a068c89" />
 
 5. Запрашиваем по id
 
@@ -158,40 +145,95 @@ curl -i -X POST http://localhost:8081/v1/auth/login \
   -H "Authorization: Bearer demo-token-test_kottia:kate"
 ```
 
-<img width="900" height="620" alt="image" src="https://github.com/user-attachments/assets/98edb3b8-dff7-4ff7-8a9c-6152d74844ae" />
-
+<img width="900" height="538" alt="image" src="https://github.com/user-attachments/assets/b33aaf93-2b96-4954-815c-22748c4bc79b" />
 
 6. Получаем метрики
-
 
 ```bash
   curl -X GET http://localhost:8082/v1/metrics \
   -H "Authorization: Bearer demo-token-test_kottia:kate"
 ```
 
+<img width="900" height="620" alt="image" src="https://github.com/user-attachments/assets/8a5b111f-0271-4f63-8d49-763283b04b66" />
+
+<img width="900" height="111" alt="image" src="https://github.com/user-attachments/assets/8e8d3c97-fb81-42e2-a998-af4838fa306b" />
+
+
 7. Проверка prometheus
 
 http://localhost:9090
+
+<img width="900" height="175" alt="image" src="https://github.com/user-attachments/assets/1814f436-3290-48b9-97a7-72b36b6432fc" />
+
+Проверием запросы: 
+
+7.1. RPS (запросы в секунду)
+
+rate(http_requests_total[1m])
+
+<img width="900" height="231" alt="image" src="https://github.com/user-attachments/assets/d3b9b1f2-5ded-48c7-ab56-5ce4eb92f207" />
+
+7.2. Ошибки 4xx
+
+rate(http_requests_total{status=~"4.."}[1m])
+
+<img width="900" height="192" alt="image" src="https://github.com/user-attachments/assets/6f101b92-513d-4c27-b531-7400f250954c" />
+
+7.3. Ошибки 5xx
+
+rate(http_requests_total{status=~"5.."}[1m])
+
+<img width="900" height="196" alt="image" src="https://github.com/user-attachments/assets/1ba39a33-e1cf-4b71-84d3-39de25acdd38" />
+
+Ошибок не было
+
+7.4. Latency p95
+
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, method, route))
+
+<img width="900" height="210" alt="image" src="https://github.com/user-attachments/assets/f8278523-6020-440d-a283-d0cea9fb6cea" />
+
+7.5. Текущее количество активных запросов
+
+http_in_flight_requests
+
+<img width="900" height="196" alt="image" src="https://github.com/user-attachments/assets/16d15795-784f-49f3-be22-d87d756d4184" />
+
+7.6. посмотреть все метрики
+
+{__name__=~".+"}
+ 
+<img width="900" height="390" alt="image" src="https://github.com/user-attachments/assets/1f3812a1-63fb-4771-a233-82af27c39d05" />
+
+8. Настраиваем дашборд в графане
+
+ http://localhost:3000
+
+<img width="900" height="429" alt="image" src="https://github.com/user-attachments/assets/3503fc0f-65a8-4441-a411-3df44c49677e" />
+
+<img width="900" height="428" alt="image" src="https://github.com/user-attachments/assets/f6162449-2a08-4745-83cc-d12793ecdee5" />
+
 
 
 
 ### Контрольные вопросы
 
-1.	Что такое .proto и почему он считается контрактом?
+1.	Чем метрики отличаются от логов и зачем нужны оба подхода?
 
-файл, в котором описываются сервисы и структуры данных для gRPC. Он считается контрактом, потому что и клиент, и сервер строго следуют этому описанию
+Метрики — агрегированные числа (графики, алерты). Логи — детальные события (дебаг)
 
-2. Что такое deadline в gRPC и чем он полезен?
+2.	Чем Counter отличается от Gauge?
 
-максимальное время ожидания ответа от сервера. Полезен тем, что, если сервер упал или тормозит — по истечении времени приходит ошибка
+Counter — только увеличивается (запросы, ошибки). Gauge — может расти и падать (активные соединения, память)
 
-3. Почему "exactly-once" не даётся просто так даже в RPC?
+5.	Почему latency нужно измерять histogram, а не просто средним значением?
 
-Из-за ненадёжности сети подтверждение о выполнении может потеряться, и клиент повторит запрос
+Среднее скрывает выбросы. Гистограмма позволяет считать перцентили (p95, p99), которые показывают реальную задержку для "длинного хвоста"
 
-4. Как обеспечивать совместимость при расширении .proto?
+7.	Что такое labels и почему опасна высокая кардинальность?
 
-- Не менять числовые теги у существующих полей
-- Добавлять новые поля с новыми тегами
-- Не удалять старые поля без reserved
-- Старые клиенты не видят новые поля 
+Labels — теги для разделения метрик (method, status). Высокая кардинальность (например, user_id) создаёт миллионы временных рядов, что влияет на производительность
+
+9.	Зачем нужны p95/p99 и почему среднее может “врать”?
+
+Если 99% запросов быстрые, а 1% — очень медленные, среднее будет плохим, хотя большинство пользователей довольны. P95 показывает задержку для 95% пользователей
